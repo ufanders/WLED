@@ -1,0 +1,11 @@
+{
+  "name": "wled-usermod-astroBeat",
+  "build": { "libArchive": false },
+  "dependencies": [
+    {
+      "owner": "wayoda",
+      "name": "LedControl",
+      "version": "^1.0.6"
+    }
+  ]
+}
