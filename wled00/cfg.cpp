@@ -22,6 +22,10 @@
   #define DEFAULT_LED_COLOR_ORDER COL_ORDER_GRB  //default to GRB
 #endif
 
+#ifndef DEFAULT_LED_DRIVER
+  #define DEFAULT_LED_DRIVER 0  // driver for default digital buses: 0=RMT, 1=I2S (parallel I2S/LCD on ESP32, S2, S3)
+#endif
+
 static constexpr unsigned sumPinsRequired(const unsigned* current, size_t count) {
   return (count > 0) ? (Bus::getNumberOfPins(*current) + sumPinsRequired(current+1,count-1)) : 0;
 }
@@ -340,7 +344,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       unsigned start = 0;
       // analog always has length 1
       if (Bus::isPWM(dataType) || Bus::isOnOff(dataType)) count = 1;
-      busConfigs.emplace_back(dataType, defPin, start, count, DEFAULT_LED_COLOR_ORDER, false, 0, RGBW_MODE_MANUAL_ONLY, 0, LED_MILLIAMPS_DEFAULT, ABL_MILLIAMPS_DEFAULT, 0); // driver=0 (RMT default)
+      busConfigs.emplace_back(dataType, defPin, start, count, DEFAULT_LED_COLOR_ORDER, false, 0, RGBW_MODE_MANUAL_ONLY, 0, LED_MILLIAMPS_DEFAULT, ABL_MILLIAMPS_DEFAULT, DEFAULT_LED_DRIVER);
       doInitBusses = true;  // finalization done in beginStrip()
     }
   }
