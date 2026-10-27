@@ -44,6 +44,7 @@ static constexpr uint32_t AR_PERIOD_MS   = 20;
 static constexpr uint32_t HUE_PERIOD_MS  = 16;
 static constexpr int      DISP_DASHES    = -1;     // display cache code for "----"
 static constexpr int      DISP_UNSET     = -2;
+static constexpr uint32_t DISP_REINIT_MS = 2000;
 
 static constexpr uint8_t  PROG_FX[]      = { FX_MODE_FIRE_2012, FX_MODE_RIPPLE_RAINBOW, FX_MODE_NOISEPAL };
 static constexpr uint8_t  NUM_PROGS      = sizeof(PROG_FX);
@@ -99,6 +100,7 @@ class AstroBeatUsermod : public Usermod {
 
     int dispValue = DISP_UNSET;
     int dispProgram = DISP_UNSET;
+    uint32_t lastDisplayInit = 0;
 
     static const char _name[];
     static const char _enabled[];
@@ -374,6 +376,16 @@ class AstroBeatUsermod : public Usermod {
       }
     }
 
+    // (re)send the MAX7219 control registers and force a full redraw. Called periodically because the
+    // chip powers up in shutdown mode and can miss or lose its setup (late 5V supply, noise on the 3.3V lines)
+    void initDisplay(uint32_t now) {
+      lc->shutdown(0, false);
+      lc->setScanLimit(0, 7);
+      lc->setIntensity(0, 8);
+      dispValue = dispProgram = DISP_UNSET;
+      lastDisplayInit = now;
+    }
+
     void updateLights(uint32_t now) {
       bool blinkOn = (now / BLINK_MS) & 1;
       for (unsigned i = 0; i < NUM_PROGS; i++) digitalWrite(lightPins[i], program == i + 1 && blinkOn);
@@ -408,9 +420,7 @@ class AstroBeatUsermod : public Usermod {
       pinMode(ASTRO_POT_PIN, INPUT);
 
       lc = new LedControl(dispPins[0], dispPins[1], dispPins[2], 1);
-      lc->shutdown(0, false);
-      lc->setIntensity(0, 8);
-      lc->clearDisplay(0);
+      initDisplay(millis());
 
       readPot(POT_PERIOD_MS);   // prime the pot so the boot position doesn't count as a move
       initDone = true;
@@ -444,6 +454,7 @@ class AstroBeatUsermod : public Usermod {
         updateAr();
       }
 
+      if (now - lastDisplayInit >= DISP_REINIT_MS) initDisplay(now);
       updateDisplay();
       updateLights(now);
     }
